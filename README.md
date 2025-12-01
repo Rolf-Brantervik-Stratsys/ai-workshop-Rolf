@@ -76,32 +76,45 @@ dotnet run
 
 ## Usage
 
-Once the application starts, you'll see a welcome message:
+Once the application starts, you'll be prompted to select a model:
 
 ```
 ===========================================
-  Welcome to the AI Chat Application!
+  Welcome to Strat-AI-chat
 ===========================================
+
 Powered by Semantic Kernel
-Type your messages and I'll respond.
-Type 'exit' or 'quit' to leave.
+
+Please select a model:
+1. gpt-4o-mini
+2. gpt-5.1-chat
+
+Enter your choice (1-2):
 ```
+
+### Model Selection
+
+- **gpt-4o-mini**: Fast and cost-effective model, suitable for most tasks
+- **gpt-5.1-chat**: Advanced model with enhanced capabilities
+
+After selecting a model, you can start chatting:
 
 - Type your messages and press Enter to chat with the AI
 - The AI maintains conversation context throughout the session
-- Type `exit` or `quit` to end the conversation
+- Press **Ctrl+C** to exit the application
 
 ### Example Interaction
 
 ```
+Enter your choice (1-2): 1
+
+Using model: gpt-4o-mini
+
 You: What is Semantic Kernel?
 Bot: Semantic Kernel is an open-source SDK that lets you easily combine AI services...
 
 You: How can I use it in my projects?
 Bot: You can use Semantic Kernel by...
-
-You: exit
-Bot: Goodbye! Thanks for chatting!
 ```
 
 ## Technologies Used
