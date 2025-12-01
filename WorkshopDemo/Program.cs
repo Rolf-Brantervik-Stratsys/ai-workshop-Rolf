@@ -11,37 +11,136 @@ Console.WriteLine("Powered by Semantic Kernel\n");
 var selectedModel = SelectModel();
 
 Console.WriteLine($"\nUsing model: {selectedModel}");
-Console.WriteLine("\nType your messages and I'll respond.");
-Console.WriteLine("Press Ctrl+C to exit.\n");
 
 var kernel = BuildSemanticKernel(selectedModel);
 
-var chatService = kernel.GetRequiredService<IChatCompletionService>();
-var chatHistory = new ChatHistory("You are a helpful, friendly AI assistant.");
-
-while (true)
+if (selectedModel == "csv-analysis")
 {
-    Console.Write("You: ");
-    var userInput = Console.ReadLine();
+    await AnalyzeCsvFile(kernel);
+}
+else
+{
+    await StartChat(kernel);
+}
 
-    if (string.IsNullOrWhiteSpace(userInput))
+async Task AnalyzeCsvFile(Kernel kernel)
+{
+    Console.WriteLine("\nCSV File Analysis Mode - Swedish Language Detection");
+    Console.WriteLine("Default file: data.csv");
+    Console.Write("Enter CSV file path (or press Enter to use default): ");
+    var filePath = Console.ReadLine();
+    
+    if (string.IsNullOrWhiteSpace(filePath))
     {
-        continue;
+        filePath = "data.csv";
     }
 
-    chatHistory.AddUserMessage(userInput);
-
-    try
+    if (!File.Exists(filePath))
     {
-        var result = await chatService.GetChatMessageContentAsync(chatHistory);
-        var response = result.Content ?? "I'm not sure how to respond to that.";
-
-        chatHistory.AddAssistantMessage(response);
-        Console.WriteLine($"Bot: {response}\n");
+        Console.WriteLine($"\nError: File '{filePath}' not found.");
+        return;
     }
-    catch (Exception ex)
+
+    var allLines = File.ReadAllLines(filePath);
+    var chatService = kernel.GetRequiredService<IChatCompletionService>();
+    
+    const int batchSize = 20;
+    int totalProcessed = 0;
+    var swedishIds = new List<string>();
+
+    Console.WriteLine("\nAnalyzing file for Swedish language content...\n");
+
+    for (int i = 0; i < allLines.Length; i += batchSize)
     {
-        Console.WriteLine($"Error: {ex.Message}\n");
+        var batch = allLines.Skip(i).Take(batchSize).ToArray();
+        var batchText = string.Join("\n", batch);
+        
+        var chatHistory = new ChatHistory(
+            "You are a language detection assistant. Analyze the provided CSV lines (format: Id;Text) and identify which lines contain Swedish language text. " +
+            "Respond ONLY with the IDs of lines that are in Swedish, one ID per line. " +
+            "If no Swedish text is found, respond with 'No Swedish text found.'");
+        
+        chatHistory.AddUserMessage($"Analyze these CSV lines and identify Swedish language content:\n\n{batchText}");
+
+        try
+        {
+            var result = await chatService.GetChatMessageContentAsync(chatHistory);
+            var response = result.Content ?? "No response received.";
+            
+            if (!response.Contains("No Swedish text found"))
+            {
+                // Extract IDs from the response
+                var lines = response.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                foreach (var line in lines)
+                {
+                    var trimmedLine = line.Trim();
+                    if (!string.IsNullOrWhiteSpace(trimmedLine) && !trimmedLine.StartsWith("No Swedish"))
+                    {
+                        swedishIds.Add(trimmedLine);
+                    }
+                }
+            }
+            
+            totalProcessed += batch.Length;
+            Console.WriteLine($"[Processed {totalProcessed} lines]");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error processing batch: {ex.Message}\n");
+        }
+    }
+
+    Console.WriteLine($"\nAnalysis complete. Total lines processed: {totalProcessed}");
+    Console.WriteLine("\n===========================================");
+    Console.WriteLine("Swedish Text IDs:");
+    Console.WriteLine("===========================================");
+    
+    if (swedishIds.Count > 0)
+    {
+        foreach (var id in swedishIds)
+        {
+            Console.WriteLine(id);
+        }
+        Console.WriteLine($"\nTotal Swedish entries found: {swedishIds.Count}");
+    }
+    else
+    {
+        Console.WriteLine("No Swedish text found in the file.");
+    }
+}
+
+async Task StartChat(Kernel kernel)
+{
+    Console.WriteLine("\nType your messages and I'll respond.");
+    Console.WriteLine("Press Ctrl+C to exit.\n");
+
+    var chatService = kernel.GetRequiredService<IChatCompletionService>();
+    var chatHistory = new ChatHistory("You are a helpful, friendly AI assistant.");
+
+    while (true)
+    {
+        Console.Write("You: ");
+        var userInput = Console.ReadLine();
+
+        if (string.IsNullOrWhiteSpace(userInput))
+        {
+            continue;
+        }
+
+        chatHistory.AddUserMessage(userInput);
+
+        try
+        {
+            var result = await chatService.GetChatMessageContentAsync(chatHistory);
+            var response = result.Content ?? "I'm not sure how to respond to that.";
+
+            chatHistory.AddAssistantMessage(response);
+            Console.WriteLine($"Bot: {response}\n");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}\n");
+        }
     }
 }
 
@@ -54,7 +153,10 @@ Kernel BuildSemanticKernel(string model)
     // Build Semantic Kernel
     var kernelBuilder = Kernel.CreateBuilder();
 
-    kernelBuilder.AddAzureOpenAIChatCompletion(model, endpoint, apiKey);
+    // Use gpt-4o-mini for CSV analysis
+    var actualModel = model == "csv-analysis" ? "gpt-4o-mini" : model;
+    
+    kernelBuilder.AddAzureOpenAIChatCompletion(actualModel, endpoint, apiKey);
 
     return kernelBuilder.Build();
 }
@@ -67,13 +169,15 @@ string SelectModel()
         Console.WriteLine("Please select a model:");
         Console.WriteLine("1. gpt-4o-mini");
         Console.WriteLine("2. gpt-5.1-chat");
-        Console.Write("\nEnter your choice (1-2): ");
+        Console.WriteLine("3. Analyze CSV file (uses gpt-4o-mini)");
+        Console.Write("\nEnter your choice (1-3): ");
 
         var choice = Console.ReadLine();
         model = choice switch
         {
             "1" => "gpt-4o-mini",
             "2" => "gpt-5.1-chat",
+            "3" => "csv-analysis",
             _ => null
         };
 

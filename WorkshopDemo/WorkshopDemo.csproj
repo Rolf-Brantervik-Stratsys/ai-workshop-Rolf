@@ -11,4 +11,10 @@
     <PackageReference Include="Microsoft.SemanticKernel" Version="1.67.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="data.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
