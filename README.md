@@ -47,19 +47,18 @@ The application requires the following environment variables:
 #### Windows (PowerShell)
 ```powershell
 $env:OPENAI_API_KEY = "your-azure-openai-api-key"
-$env:OPENAI_MODEL = "gpt-4o-mini"  # Optional, defaults to gpt-4o-mini
+$env:OPENAI_ENDPOINT = "https://your-resource.openai.azure.com/"  # Optional, defaults to ai-workshop-251201-resource
 ```
 
 #### Linux/MacOS (Bash)
 ```bash
 export OPENAI_API_KEY="your-azure-openai-api-key"
-export OPENAI_MODEL="gpt-4o-mini"  # Optional, defaults to gpt-4o-mini
+export OPENAI_ENDPOINT="https://your-resource.openai.azure.com/"  # Optional, defaults to ai-workshop-251201-resource
 ```
 
-**Note**: The Azure OpenAI endpoint is currently configured in the code as:
-- Endpoint: `https://ai-workshop-251201-resource.openai.azure.com/`
-
-If you need to use a different endpoint, update line 14 in `Program.cs`.
+**Environment Variables:**
+- `OPENAI_API_KEY` (required): Your Azure OpenAI API key
+- `OPENAI_ENDPOINT` (optional): Your Azure OpenAI endpoint URL. Defaults to `https://ai-workshop-251201-resource.openai.azure.com/`
 
 ### 3. Build the Project
 
